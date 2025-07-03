@@ -1,277 +1,173 @@
-"use client";
-
-import { useState, useEffect } from 'react';
-import { WeightEntryForm } from '@/components/weight-entry-form';
-import { WeightChart } from '@/components/weight-chart';
-import { EntriesList } from '@/components/entries-list';
-import { StatsOverview } from '@/components/stats-overview';
-import { PenDurabilityCalculator } from '@/components/pen-durability-calculator';
-import { ActivePenTracker } from '@/components/active-pen-tracker';
-import { ComparisonAnalysis } from '@/components/comparison-analysis';
-import { UsageGuide } from '@/components/usage-guide';
-import { Button } from '@/components/ui/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Download, Upload, Heart } from 'lucide-react';
-import { toast } from 'sonner';
-
-interface WeightEntry {
-  date: Date;
-  weight: number;
-  dosage: string;
-  notes?: string;
-  penCost?: number;
-  penType?: string;
-  penId?: string;
-  isNewPen?: boolean;
-}
-
-interface GoalSettings {
-  targetWeight: number;
-  startWeight: number;
-}
+import Link from 'next/link'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Droplets, MapPin, Shield, Activity } from 'lucide-react'
 
 export default function Home() {
-  const [entries, setEntries] = useState<WeightEntry[]>([]);
-  const [goalSettings, setGoalSettings] = useState<GoalSettings | undefined>();
-
-  console.log('App rendered with entries:', entries);
-
-  // Load data from localStorage on mount
-  useEffect(() => {
-    const savedEntries = localStorage.getItem('mounjaro-entries');
-    const savedGoal = localStorage.getItem('mounjaro-goal');
-    
-    if (savedEntries) {
-      try {
-        const parsed = JSON.parse(savedEntries);
-        const entriesWithDates = parsed.map((entry: any) => ({
-          ...entry,
-          date: new Date(entry.date),
-        }));
-        setEntries(entriesWithDates);
-        console.log('Loaded entries from localStorage:', entriesWithDates);
-      } catch (error) {
-        console.error('Error loading entries:', error);
-        toast.error('Chyba při načítání dat');
-      }
-    }
-    
-    if (savedGoal) {
-      try {
-        const goalData = JSON.parse(savedGoal);
-        setGoalSettings(goalData);
-        console.log('Loaded goal from localStorage:', goalData);
-      } catch (error) {
-        console.error('Error loading goal:', error);
-      }
-    }
-  }, []);
-
-  // Save data to localStorage whenever entries change
-  useEffect(() => {
-    if (entries.length > 0) {
-      localStorage.setItem('mounjaro-entries', JSON.stringify(entries));
-      console.log('Saved entries to localStorage:', entries);
-    }
-  }, [entries]);
-
-  // Save goal to localStorage whenever it changes
-  useEffect(() => {
-    if (goalSettings) {
-      localStorage.setItem('mounjaro-goal', JSON.stringify(goalSettings));
-      console.log('Saved goal to localStorage:', goalSettings);
-    }
-  }, [goalSettings]);
-
-  const handleEntryAdded = (newEntry: WeightEntry) => {
-    console.log('Adding new entry:', newEntry);
-    setEntries(prev => [...prev, newEntry]);
-    toast.success('Záznam byl přidán!');
-  };
-
-  const handleDeleteEntry = (index: number) => {
-    console.log('Deleting entry at index:', index);
-    setEntries(prev => prev.filter((_, i) => i !== index));
-    toast.success('Záznam byl smazán');
-  };
-
-  const handleGoalUpdate = (newGoal: GoalSettings) => {
-    console.log('Updating goal settings:', newGoal);
-    setGoalSettings(newGoal);
-    toast.success('Cíl byl nastaven!');
-  };
-
-  const exportData = () => {
-    const dataStr = JSON.stringify(entries, null, 2);
-    const dataBlob = new Blob([dataStr], { type: 'application/json' });
-    const url = URL.createObjectURL(dataBlob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `mounjaro-data-${new Date().toISOString().split('T')[0]}.json`;
-    link.click();
-    URL.revokeObjectURL(url);
-    toast.success('Data byla exportována');
-  };
-
-  const importData = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      try {
-        const imported = JSON.parse(e.target?.result as string);
-        const entriesWithDates = imported.map((entry: any) => ({
-          ...entry,
-          date: new Date(entry.date),
-        }));
-        setEntries(entriesWithDates);
-        toast.success('Data byla importována');
-      } catch (error) {
-        console.error('Import error:', error);
-        toast.error('Chyba při importu dat');
-      }
-    };
-    reader.readAsText(file);
-  };
-
   return (
-    <div className="min-h-screen bg-medical-gradient">
-      <div className="container mx-auto px-4 py-8">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-green-50 to-blue-100 p-4">
+      <div className="max-w-4xl mx-auto space-y-8">
+        
         {/* Header */}
-        <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-health-dark mb-2">
-            <Heart className="inline-block mr-3 h-8 w-8 text-health-primary" />
-            Mounjaro Tracker
+        <div className="text-center space-y-4">
+          <h1 className="text-5xl font-bold text-green-800">
+            Vinoř Apps
           </h1>
-          <p className="text-health-dark/70 text-lg">
-            Určeno pro skupinu Kilimundžáro CZ/SK
+          <p className="text-xl text-green-700">
+            Weather, GPS Tracking & Weight Monitor pro Vinoř
           </p>
         </div>
 
-        {/* Import/Export */}
-        <div className="flex justify-center gap-4 mb-8">
-          <Button variant="outline" onClick={exportData} disabled={entries.length === 0}>
-            <Download className="mr-2 h-4 w-4" />
-            Exportovat data
-          </Button>
-          <div>
-            <input
-              type="file"
-              accept=".json"
-              onChange={importData}
-              style={{ display: 'none' }}
-              id="import-input"
-            />
-            <Button variant="outline" onClick={() => document.getElementById('import-input')?.click()}>
-              <Upload className="mr-2 h-4 w-4" />
-              Importovat data
-            </Button>
-          </div>
-        </div>
-
-        {/* Stats Overview */}
-        <div className="mb-8">
-          <StatsOverview entries={entries} goalSettings={goalSettings} />
-        </div>
-
-        {/* Active Pen Tracker */}
-        <div className="mb-8">
-          <ActivePenTracker entries={entries} />
-        </div>
-
-        {/* Main Content */}
-        <Tabs defaultValue="form" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-6 bg-white/70 backdrop-blur-sm border-2 border-white/30 shadow-lg rounded-xl p-1 h-auto">
-            <TabsTrigger 
-              value="form"
-              className="data-[state=active]:bg-health-primary data-[state=active]:text-white data-[state=active]:shadow-md rounded-lg transition-all duration-200 text-xs font-medium px-1 py-2 min-h-[44px] flex items-center justify-center"
-            >
-              <span className="hidden sm:inline text-center">Nový záznam</span>
-              <span className="sm:hidden text-center">Záznam</span>
-            </TabsTrigger>
-            <TabsTrigger 
-              value="chart"
-              className="data-[state=active]:bg-health-primary data-[state=active]:text-white data-[state=active]:shadow-md rounded-lg transition-all duration-200 text-xs font-medium px-1 py-2 min-h-[44px] flex items-center justify-center"
-            >
-              <span className="text-center">Graf</span>
-            </TabsTrigger>
-            <TabsTrigger 
-              value="entries"
-              className="data-[state=active]:bg-health-primary data-[state=active]:text-white data-[state=active]:shadow-md rounded-lg transition-all duration-200 text-xs font-medium px-1 py-2 min-h-[44px] flex items-center justify-center"
-            >
-              <span className="text-center">Historie</span>
-            </TabsTrigger>
-            <TabsTrigger 
-              value="durability"
-              className="data-[state=active]:bg-health-primary data-[state=active]:text-white data-[state=active]:shadow-md rounded-lg transition-all duration-200 text-xs font-medium px-1 py-2 min-h-[44px] flex items-center justify-center"
-            >
-              <span className="hidden sm:inline text-center">Výdrž per</span>
-              <span className="sm:hidden text-center">Pera</span>
-            </TabsTrigger>
-            <TabsTrigger 
-              value="compare"
-              className="data-[state=active]:bg-health-primary data-[state=active]:text-white data-[state=active]:shadow-md rounded-lg transition-all duration-200 text-xs font-medium px-1 py-2 min-h-[44px] flex items-center justify-center"
-            >
-              <span className="hidden sm:inline text-center">Porovnání</span>
-              <span className="sm:hidden text-center">Srovnání</span>
-            </TabsTrigger>
-            <TabsTrigger 
-              value="guide"
-              className="data-[state=active]:bg-health-primary data-[state=active]:text-white data-[state=active]:shadow-md rounded-lg transition-all duration-200 text-xs font-medium px-1 py-2 min-h-[44px] flex items-center justify-center"
-            >
-              <span className="hidden sm:inline text-center">Návod</span>
-              <span className="sm:hidden text-center">Návod</span>
-            </TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="form" className="space-y-6">
-            <WeightEntryForm 
-              onEntryAdded={handleEntryAdded} 
-              goalSettings={goalSettings}
-              onGoalUpdate={handleGoalUpdate}
-              entries={entries}
-            />
-          </TabsContent>
-
-          <TabsContent value="chart" className="space-y-6">
-            <WeightChart entries={entries} goalSettings={goalSettings} />
-          </TabsContent>
-
-          <TabsContent value="entries" className="space-y-6">
-            <EntriesList entries={entries} onDeleteEntry={handleDeleteEntry} />
-          </TabsContent>
-
-          <TabsContent value="durability" className="space-y-6">
-            <ActivePenTracker entries={entries} />
-          </TabsContent>
-
-          <TabsContent value="compare" className="space-y-6">
-            <ComparisonAnalysis entries={entries} />
-          </TabsContent>
-
-          <TabsContent value="guide" className="space-y-6">
-            <UsageGuide />
-          </TabsContent>
-        </Tabs>
-
-        {/* Footer */}
-        <div className="text-center mt-12 space-y-4">
-          <div className="text-health-dark/50 text-sm">
-            <p>💚 Vytvořeno pro podporu zdravého životního stylu</p>
-          </div>
+        {/* Applications Grid */}
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           
-          {/* Disclaimer */}
-          <div className="max-w-4xl mx-auto p-4 bg-amber-50 border border-amber-200 rounded-lg text-amber-800 text-xs">
-            <p className="font-semibold mb-2">⚠️ Důležité upozornění:</p>
-            <p>
-              Tato aplikace slouží pouze pro sledování a není náhradou za lékařskou péči. 
-              Nikdy neměňte dávkování bez konzultace s lékařem. Dělení dávek provádějte pouze na doporučení lékaře. 
-              Při jakýchkoli problémech kontaktujte svého lékaře.
-            </p>
-          </div>
+          {/* Weather App */}
+          <Card className="border-blue-200 bg-white/70 backdrop-blur hover:bg-white/80 transition-all">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-3 text-blue-800">
+                <Droplets className="h-6 w-6" />
+                Vinoř Weather
+              </CardTitle>
+              <CardDescription className="text-base">
+                Sledování srážek a počasí pro zahrádkáře
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2 text-sm text-gray-600">
+                <div className="flex items-center gap-2">
+                  <Shield className="h-4 w-4 text-green-600" />
+                  <span>Bezpečné API - klíč skrytý na serveru</span>
+                </div>
+                <p>• Aktuální srážky pro Vinoř</p>
+                <p>• Hodinové přehledy za 24h</p>
+                <p>• Automatické obnovování</p>
+                <p>• Optimalizováno pro zahrádkáře</p>
+              </div>
+              
+              <Link href="/weather">
+                <Button className="w-full bg-blue-600 hover:bg-blue-700">
+                  Otevřít Weather App
+                </Button>
+              </Link>
+            </CardContent>
+          </Card>
+
+          {/* GPS Tracker */}
+          <Card className="border-green-200 bg-white/70 backdrop-blur hover:bg-white/80 transition-all">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-3 text-green-800">
+                <MapPin className="h-6 w-6" />
+                Apalucha GPS Tracker
+              </CardTitle>
+              <CardDescription className="text-base">
+                Profesionální GPS sledování pro outdoor aktivity
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2 text-sm text-gray-600">
+                <p>• Real-time GPS tracking</p>
+                <p>• Měření rychlosti a vzdálenosti</p>
+                <p>• Statistiky a historie tras</p>
+                <p>• Responsivní design pro mobile</p>
+              </div>
+              
+              <div className="space-y-2">
+                <Link href="/gps-tracker">
+                  <Button className="w-full bg-green-600 hover:bg-green-700">
+                    Otevřít GPS Tracker
+                  </Button>
+                </Link>
+                <Link href="/apalucha-gps.html" target="_blank">
+                  <Button variant="outline" className="w-full">
+                    HTML verze (offline)
+                  </Button>
+                </Link>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Weight Tracker */}
+          <Card className="border-purple-200 bg-white/70 backdrop-blur hover:bg-white/80 transition-all">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-3 text-purple-800">
+                <Activity className="h-6 w-6" />
+                Weight Tracker & Tirzepatid
+              </CardTitle>
+              <CardDescription className="text-base">
+                Sledování hmotnosti a koncentrace Tirzepatidu (Mounjaro)
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2 text-sm text-gray-600">
+                <div className="flex items-center gap-2">
+                  <Shield className="h-4 w-4 text-purple-600" />
+                  <span>Lokální úložiště - data zůstávají v prohlížeči</span>
+                </div>
+                <p>• Sledování dávek Tirzepatidu (datum + mg)</p>
+                <p>• Graf koncentrace v plazmě (poločas 5 dní)</p>
+                <p>• Kumulativní výpočet z všech dávek</p>
+                <p>• Aktuální hladina léčiva</p>
+              </div>
+              
+              <div className="space-y-2">
+                <Link href="/weight-tracker">
+                  <Button className="w-full bg-purple-600 hover:bg-purple-700">
+                    Otevřit Weight Tracker
+                  </Button>
+                </Link>
+                <Link href="/weight-tracker-staging">
+                  <Button variant="outline" className="w-full border-purple-300 text-purple-700 hover:bg-purple-50">
+                    Staging verze (pokročilé funkce)
+                  </Button>
+                </Link>
+              </div>
+            </CardContent>
+          </Card>
         </div>
+
+        {/* Security Info */}
+        <Card className="border-green-300 bg-green-50/70 backdrop-blur">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-green-800">
+              <Shield className="h-5 w-5" />
+              Bezpečnost a soukromí
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="text-sm text-green-700 space-y-2">
+            <p>🔒 <strong>Weather App:</strong> API klíč je bezpečně uložen na serveru - není viditelný v kódu</p>
+            <p>🗺️ <strong>GPS Tracker:</strong> Používá pouze lokální prohlížeč - žádná data se neukládají na servery</p>
+            <p>💊 <strong>Weight Tracker:</strong> Všechna zdravotní data zůstávají pouze ve vašem prohlížeči</p>
+            <p>💾 <strong>GitHub:</strong> Můžete bezpečně nahrát na GitHub - citlivé údaje jsou chráněny</p>
+          </CardContent>
+        </Card>
+
+        {/* Instructions */}
+        <Card className="border-blue-200 bg-blue-50/70 backdrop-blur">
+          <CardHeader>
+            <CardTitle className="text-blue-800">Jak začít</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3 text-sm text-blue-700">
+            <div>
+              <h4 className="font-semibold">Pro Weather App:</h4>
+              <ol className="list-decimal list-inside mt-1 space-y-1">
+                <li>Získejte bezplatný API klíč na <a href="https://openweathermap.org/api" target="_blank" className="underline">openweathermap.org</a></li>
+                <li>Přidejte ho do souboru <code>.env.local</code></li>
+                <li>Restartujte aplikaci</li>
+              </ol>
+            </div>
+            
+            <div>
+              <h4 className="font-semibold">Pro GPS Tracker:</h4>
+              <p>Stačí otevřít a povolit přístup k poloze v prohlížeči</p>
+            </div>
+            
+            <div>
+              <h4 className="font-semibold">Pro Weight Tracker:</h4>
+              <p>Zadávejte dávky Tirzepatidu (datum + mg) a sledujte koncentraci v plazmě s exponenciálním rozpadem (poločas 5 dní)</p>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
-  );
+  )
 }
